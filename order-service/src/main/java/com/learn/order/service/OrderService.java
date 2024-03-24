@@ -3,12 +3,15 @@ package com.learn.order.service;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import com.learn.order.dtos.InventoryResponse;
 import com.learn.order.dtos.OrderItemsDto;
 import com.learn.order.dtos.OrderRequest;
+import com.learn.order.event.OrderPlacedEvent;
 import com.learn.order.model.Order;
 import com.learn.order.model.OrderItems;
 import com.learn.order.repository.OrderRepository;
@@ -26,7 +29,8 @@ public class OrderService {
 
 	private final OrderRepository orderRepository;
 	private final WebClient.Builder webClientBuilder;
-
+	private final KafkaTemplate<String,OrderPlacedEvent> kafkaTemplate;
+	
 	public String placeOrder(OrderRequest orderRequest) {
         log.info("Processing order: {}", orderRequest);
 
@@ -79,7 +83,7 @@ public class OrderService {
 
 		if(allProductsInStock) {
 			orderRepository.save(order);
-            log.info("Order placed successfully: {}", order);
+			kafkaTemplate.send("notificationTopic",new OrderPlacedEvent(order.getOrderNumber()));
 			return "order placed sucessfully";
 
 		}else {
