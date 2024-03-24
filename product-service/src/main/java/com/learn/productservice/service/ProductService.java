@@ -32,6 +32,7 @@ public class ProductService {
 
     public List<ProductResponse> getAllProducts() {
         List<Product> products = productRepository.findAll();
+        log.info("All Products {} is ", products);
 
         return products.stream().map(this::mapToProductResponse).toList();
     }
